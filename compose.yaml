@@ -1,0 +1,10 @@
+services:
+  sentinel:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - alerts-data:/app/data #le dossier où notre API enregistrera la base de données
+
+volumes:
+  alerts-data:
