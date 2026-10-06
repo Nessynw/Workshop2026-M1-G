@@ -1,1 +1,11 @@
 .pio
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-*
+events.jsonl

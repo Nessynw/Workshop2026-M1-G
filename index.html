@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sentinel-X</title>
+  <style>
+    body {
+      background: #101827;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 25px;
+    }
+    h1 { color: #4ade80; }
+    li {
+      background: #243047;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+    ul { list-style: none; padding: 0; }
+  </style>
+</head>
+<body>
+  <h1>SENTINEL-X</h1>
+  <p id="status">Connexion à l’API…</p>
+  <h2>Capteurs</h2>
+<p id="sensor-status">En attente de mesures…</p>
+<div id="sensor-charts"></div>
+  <h2>Caméra en direct</h2>
+<p id="camera-status">En attente de la webcam…</p>
+<img
+  id="camera"
+  alt="Image de la webcam avec les détections"
+  style="width:100%; max-width:640px; display:none;"
+>
+  <h2>Dernières alertes</h2>
+  <ul id="alerts"></ul>
+
+  <script>
+    async function refresh() {
+      const status = document.getElementById("status");
+
+      try {
+        const response = await fetch("/api/v1/alerts");
+        if (!response.ok) throw new Error("API inaccessible");
+
+        const alerts = await response.json();
+        status.textContent = "API connectée";
+
+        const list = document.getElementById("alerts");
+        list.replaceChildren();
+
+        for (const alert of alerts) {
+          const item = document.createElement("li");
+          const date = new Date(alert.timestamp).toLocaleString("fr-FR");
+          const label = alert.type === "human_presence"
+            ? "Présence humaine détectée"
+            : alert.type;
+
+          item.textContent = `${date} — ${label} — ${alert.source}`;
+          list.appendChild(item);
+        }
+
+        if (alerts.length === 0) {
+          const item = document.createElement("li");
+          item.textContent = "Aucune alerte reçue.";
+          list.appendChild(item);
+        }
+      } catch (error) {
+        status.textContent = "API inaccessible — données non actualisées";
+      } finally {
+        setTimeout(refresh, 2000);
+      }
+    }
+
+    refresh();
+    const camera = document.getElementById("camera");
+const cameraStatus = document.getElementById("camera-status");
+
+camera.onload = () => {
+  camera.style.display = "block";
+  cameraStatus.textContent = "Dernière image reçue";
+};
+
+camera.onerror = () => {
+  camera.style.display = "none";
+  cameraStatus.textContent = "Image indisponible";
+};
+
+setInterval(() => {
+  camera.src = "/api/v1/frame?t=" + Date.now();
+}, 200);
+async function refreshSensors() {
+  const status = document.getElementById("sensor-status");
+
+  try {
+    const response = await fetch("/api/v1/readings");
+    if (!response.ok) throw new Error("Mesures indisponibles");
+
+    const readings = await response.json();
+    const container = document.getElementById("sensor-charts");
+
+    if (readings.length === 0) {
+      status.textContent = "Aucune mesure reçue.";
+      container.replaceChildren();
+      return;
+    }
+
+    const latest = readings[readings.length - 1];
+    const age = Date.now() - new Date(latest.timestamp).getTime();
+    const source = latest.source === "simulation"
+      ? "SIMULATION — données fictives"
+      : "ESP8266";
+
+    status.textContent = source + (
+      age < 10000
+        ? " — mesures reçues récemment"
+        : " — aucune nouvelle mesure depuis plus de 10 secondes"
+    );
+
+    // Affiche uniquement les mesures de la dernière source utilisée.
+    const series = readings.filter(
+      reading => reading.source === latest.source
+    );
+
+    container.replaceChildren();
+
+    const charts = [
+      ["temperature", "Température", "°C"],
+      ["humidity", "Humidité", "%"],
+      ["gas_raw", "Gaz — valeur brute", ""]
+    ];
+
+    for (const [key, label, unit] of charts) {
+      const panel = document.createElement("div");
+      panel.style.marginBottom = "25px";
+
+      const title = document.createElement("h3");
+      title.textContent = `${label} : ${latest[key]} ${unit}`;
+      panel.appendChild(title);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 600;
+      canvas.height = 160;
+      canvas.style.width = "100%";
+      canvas.style.maxWidth = "600px";
+      canvas.style.background = "#243047";
+      panel.appendChild(canvas);
+
+      const values = series.map(reading => reading[key]);
+      const minimum = Math.min(...values);
+      const maximum = Math.max(...values);
+      const span = maximum - minimum || 1;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "white";
+      ctx.font = "12px Arial";
+      ctx.fillText(`Max : ${maximum} ${unit}`, 10, 18);
+      ctx.fillText(`Min : ${minimum} ${unit}`, 10, 145);
+
+      const firstTime = new Date(series[0].timestamp).getTime();
+      const lastTime = new Date(latest.timestamp).getTime();
+      const duration = lastTime - firstTime || 1;
+
+      ctx.strokeStyle = "#4ade80";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      values.forEach((value, index) => {
+        const timestamp = new Date(series[index].timestamp).getTime();
+        const x = 15 + ((timestamp - firstTime) / duration) * 570;
+        const y = 120 - ((value - minimum) / span) * 85;
+
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+
+        if (values.length === 1) {
+          ctx.fillStyle = "#4ade80";
+          ctx.fillRect(x - 2, y - 2, 4, 4);
+        }
+      });
+
+      ctx.stroke();
+
+      const caption = document.createElement("p");
+      caption.textContent =
+        new Date(series[0].timestamp).toLocaleTimeString("fr-FR") +
+        " → " +
+        new Date(latest.timestamp).toLocaleTimeString("fr-FR");
+      panel.appendChild(caption);
+
+      container.appendChild(panel);
+    }
+  } catch (error) {
+    status.textContent = "Impossible de récupérer les mesures.";
+  } finally {
+    setTimeout(refreshSensors, 2000);
+  }
+}
+
+refreshSensors();
+  </script>
+</body>
+</html>
