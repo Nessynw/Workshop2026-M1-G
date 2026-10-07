@@ -5,6 +5,8 @@
 #include <esp_system.h>
 
 #include "ca_cert.h"
+#include "mqtt_secrets.h"
+#include <time.h>
 
 // ======================================================
 // Wi-Fi
@@ -496,15 +498,12 @@ void reconnectMQTT() {
         "Tentative de connexion MQTTS..."
     );
 
-    if (
-        mqttClient.connect(
-            "sentinel-esp32"
-        )
-    ) {
-
-      Serial.println(
-          "MQTTS connecté !"
-      );
+    if (mqttClient.connect(
+            "sentinel-esp32",
+            MQTT_USER,
+            MQTT_PASSWORD
+        )) {
+      Serial.println("MQTTS connecté !");
 
     } else {
 
@@ -757,10 +756,16 @@ void setup() {
   }
 
   Serial.println();
+  Serial.println("Wi-Fi connecté !");
 
-  Serial.println(
-      "Wi-Fi connecté !"
-  );
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+
+  struct tm timeinfo;
+  while (!getLocalTime(&timeinfo, 10000)) {
+    Serial.println("En attente de l'heure...");
+  }
+
+  Serial.println("Heure synchronisée.");
 
   Serial.print(
       "Adresse IP : "

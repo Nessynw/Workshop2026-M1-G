@@ -4,7 +4,16 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      - alerts-data:/app/data #le dossier où notre API enregistrera la base de données
+      - alerts-data:/app/data
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "127.0.0.1:8883:8883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - ./mosquitto/certs/server.crt:/mosquitto/certs/server.crt:ro
+      - ./mosquitto/certs/server.key:/mosquitto/certs/server.key:ro
 
 volumes:
   alerts-data:

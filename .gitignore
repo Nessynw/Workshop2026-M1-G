@@ -9,3 +9,6 @@ data/
 *.db
 *.db-*
 events.jsonl
+mosquitto/certs/*.key
+mosquitto/config/passwords
+esp32-wokwi/src/mqtt_secrets.h
