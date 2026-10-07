@@ -1,0 +1,6 @@
+scenario,origine,temperature,humidity,gas_raw,score,atypique
+Référence médiane,reference,33.68,50.114999999999995,2319.0,0.09233704233723494,False
+Température inhabituelle,injection,73.25999999999999,50.114999999999995,2319.0,-0.07684507164066201,True
+Gaz inhabituel,injection,33.68,50.114999999999995,7596.0,-0.042512192770562285,True
+Humidité inhabituelle,injection,33.68,100,2319.0,-0.061322157694879476,True
+Plusieurs valeurs inhabituelles,injection,73.25999999999999,100,7596.0,-0.22499611852121526,True
