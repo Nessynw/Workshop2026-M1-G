@@ -1,2 +1,5 @@
 user esp32
 topic write sentinel/sensors
+
+user bridge
+topic read sentinel/sensors

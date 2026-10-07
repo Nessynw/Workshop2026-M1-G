@@ -4,3 +4,4 @@ fastapi
 uvicorn
 scikit-learn
 joblib
+paho-mqtt>=2.0,<3.0
