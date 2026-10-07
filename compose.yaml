@@ -1,10 +1,79 @@
 services:
+
   sentinel:
     build: .
+    env_file:
+      - .env
+
+    environment:
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_TOPIC: sentinel/sensors/readings
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
     ports:
       - "127.0.0.1:8000:8000"
+
+    networks:
+      - sentinel_network
+
+
+  mysql:
+    image: mysql:8.4
+    container_name: sentinel-mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
     volumes:
-      - alerts-data:/app/data #le dossier où notre API enregistrera la base de données
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    networks:
+      - sentinel_network
+
+
+  mosquitto:
+    build: ./mosquitto
+    container_name: sentinel-mosquitto
+
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/certs:/mosquitto/certs:ro
+
+    ports:
+      - "8883:8883"
+
+    networks:
+      - sentinel_network
+
 
 volumes:
-  alerts-data:
+  mysql_data:
+
+
+networks:
+  sentinel_network:
+    driver: bridge

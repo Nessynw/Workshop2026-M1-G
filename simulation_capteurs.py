@@ -1,9 +1,51 @@
 import json
 import random
 import time
-import urllib.request
+from pathlib import Path
 
-print("Simulation de capteurs — Ctrl + C pour arrêter.")
+import paho.mqtt.client as mqtt
+
+
+MQTT_BROKER = "127.0.0.1"
+MQTT_PORT = 8883
+MQTT_TOPIC = "sentinel/sensors/readings"
+
+CA_CERT = (
+    Path(__file__).resolve().parent
+    / "mosquitto"
+    / "certs"
+    / "ca.crt"
+)
+
+
+client = mqtt.Client(
+    mqtt.CallbackAPIVersion.VERSION2
+)
+
+client.username_pw_set(
+    "sentinel",
+    "massiva"
+)
+
+# =========================
+# TLS
+# =========================
+
+client.tls_set(
+    ca_certs=str(CA_CERT)
+)
+
+print("Connexion sécurisée à Mosquitto avec TLS...")
+
+client.connect(
+    MQTT_BROKER,
+    MQTT_PORT,
+    60
+)
+
+client.loop_start()
+
+print("Simulation de capteurs — MQTT + TLS — Ctrl + C pour arrêter.")
 
 try:
     while True:
@@ -15,21 +57,23 @@ try:
             "pir": False,
         }
 
-        request = urllib.request.Request(
-            "http://127.0.0.1:8000/api/v1/readings",
-            data=json.dumps(reading).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        payload = json.dumps(reading)
+
+        result = client.publish(
+            MQTT_TOPIC,
+            payload
         )
 
-        try:
-            with urllib.request.urlopen(request, timeout=3) as response:
-                print("Mesure envoyée :", response.status, reading)
-        except Exception as error:
-            print("Envoi impossible :", error)
+        if result.rc == mqtt.MQTT_ERR_SUCCESS:
+            print("Mesure envoyée par MQTT + TLS :", reading)
+        else:
+            print("Erreur MQTT :", result.rc)
 
         time.sleep(2)
-    
 
 except KeyboardInterrupt:
     print("\nSimulation arrêtée.")
+
+finally:
+    client.loop_stop()
+    client.disconnect()

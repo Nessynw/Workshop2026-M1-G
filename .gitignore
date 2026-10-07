@@ -9,3 +9,14 @@ data/
 *.db
 *.db-*
 events.jsonl
+# TLS private keys and local certificate files
+mosquitto/certs/*.key
+mosquitto/certs/*.csr
+mosquitto/certs/*.srl
+mosquitto/certs/old/
+# Secrets Mosquitto
+mosquitto/passwd
+
+# Configuration locale VS Code
+.vscode/
+esp32-wokwi/.vscode/

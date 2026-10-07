@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -5,23 +6,34 @@
 #include "DHTesp.h"
 #include "ca_cert.h"
 
-// --------------------
-// Configuration Wi-Fi
-// --------------------
-const char* WIFI_SSID = "Wokwi-GUEST";
-const char* WIFI_PASSWORD = "";
+    // --------------------
+    // Configuration Wi-Fi
+    // --------------------
+    const char *WIFI_SSID = "Wokwi-GUEST";
+const char *WIFI_PASSWORD = "";
 
 // --------------------
 // Configuration MQTT sécurisé
 // --------------------
-const char* MQTT_SERVER = "host.wokwi.internal";
+const char *MQTT_SERVER = "host.wokwi.internal";
 const int MQTT_PORT = 8883;
-const char* MQTT_TOPIC = "sentinel/sensors";
 
+const char *MQTT_TOPIC = "sentinel/sensors/readings";
+
+// --------------------
+// Authentification MQTT
+// --------------------
+const char *MQTT_USERNAME = "sentinel";
+const char *MQTT_PASSWORD = "massiva";
+
+// --------------------
 // Client TLS
+// --------------------
 WiFiClientSecure espClient;
 
+// --------------------
 // Client MQTT
+// --------------------
 PubSubClient mqttClient(espClient);
 
 // --------------------
@@ -33,22 +45,24 @@ const int PIR_PIN = 27;
 
 DHTesp dhtSensor;
 
-
 // ==================================================
 // Fonction de connexion / reconnexion MQTT
 // ==================================================
-void reconnectMQTT() {
-
-  while (!mqttClient.connected()) {
-
+void reconnectMQTT()
+{
+  while (!mqttClient.connected())
+  {
     Serial.println("Tentative de connexion MQTTS...");
 
-    if (mqttClient.connect("sentinel-esp32")) {
-
-      Serial.println("MQTTS connecté !");
-
-    } else {
-
+    if (mqttClient.connect(
+            "sentinel-esp32",
+            MQTT_USERNAME,
+            MQTT_PASSWORD))
+    {
+      Serial.println("MQTTS connecté avec authentification !");
+    }
+    else
+    {
       Serial.print("Échec MQTTS, code : ");
       Serial.println(mqttClient.state());
 
@@ -59,14 +73,16 @@ void reconnectMQTT() {
   }
 }
 
-
 // ==================================================
 // SETUP
 // ==================================================
-void setup() {
-
+void setup()
+{
   Serial.begin(115200);
 
+  // --------------------
+  // Configuration capteurs
+  // --------------------
   dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
   pinMode(PIR_PIN, INPUT);
 
@@ -77,7 +93,8 @@ void setup() {
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD, 6);
 
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print(".");
   }
@@ -97,19 +114,22 @@ void setup() {
   // --------------------
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
 
+  // --------------------
   // Première connexion MQTT
+  // --------------------
   reconnectMQTT();
 }
-
 
 // ==================================================
 // LOOP
 // ==================================================
-void loop() {
-
-  // Si la connexion MQTT est perdue,
-  // l'ESP32 essaie automatiquement de se reconnecter
-  if (!mqttClient.connected()) {
+void loop()
+{
+  // --------------------
+  // Vérification connexion MQTT
+  // --------------------
+  if (!mqttClient.connected())
+  {
     Serial.println("Connexion MQTTS perdue !");
     reconnectMQTT();
   }
@@ -137,26 +157,47 @@ void loop() {
   json += ",\"humidity\":";
   json += String(data.humidity, 2);
 
-  json += ",\"gas\":";
+  json += ",\"gas_raw\":";
   json += String(gasValue);
 
-  json += ",\"presence\":";
+  json += ",\"pir\":";
 
-  if (presence) {
+  if (presence)
+  {
     json += "true";
-  } else {
+  }
+  else
+  {
     json += "false";
   }
 
   json += "}";
 
+  // --------------------
   // Affichage local
+  // --------------------
   Serial.println(json);
 
   // --------------------
-  // Publication MQTTS
+  // Publication MQTT + TLS
   // --------------------
-  mqttClient.publish(MQTT_TOPIC, json.c_str());
+  bool published = mqttClient.publish(
+      MQTT_TOPIC,
+      json.c_str());
 
+  if (published)
+  {
+    Serial.println(
+        "Mesure envoyée en MQTT + TLS + authentification.");
+  }
+  else
+  {
+    Serial.println("Échec de publication MQTT.");
+  }
+
+  // --------------------
+  // Attente avant prochaine mesure
+  // --------------------
   delay(2000);
 }
+
