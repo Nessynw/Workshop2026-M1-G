@@ -23,7 +23,10 @@
     [ "esp:GND.2", "gas1:GND", "black", [ "v0" ] ],
     [ "esp:34", "gas1:AOUT", "green", [ "h0" ] ],
     [ "esp:5V", "pir1:VCC", "red", [ "h-86.25", "v96" ] ],
-    [ "esp:15", "dht1:SDA", "green", [ "v0" ] ]
+[ "esp:15", "dht1:SDA", "green", [ "v0" ] ],
+[ "pir1:GND", "esp:GND.1", "black", [] ],
+[ "pir1:OUT", "esp:27", "green", [] ],    [ "pir1:GND", "esp:GND.1", "black", [] ],
+[ "pir1:OUT", "esp:27", "green", [] ]
   ],
   "dependencies": {}
 }

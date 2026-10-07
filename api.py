@@ -95,7 +95,7 @@ class SensorReading(BaseModel):
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-    source: Literal["simulation", "esp8266"]
+    source: Literal["simulation", "esp8266", "esp32_wokwi"]
     temperature: float
     humidity: float = Field(ge=0, le=100)
     gas_raw: float = Field(ge=0)
