@@ -24,9 +24,22 @@
 <body>
   <h1>SENTINEL-X</h1>
   <p id="status">Connexion à l’API…</p>
+  <h2>Statut du boîtier</h2>
+<p id="device-status">En attente de mesures…</p>
+<p id="pir-status">PIR : inconnu</p>
+<p id="last-reading">Dernière mesure : inconnue</p>
   <h2>Capteurs</h2>
 <p id="sensor-status">En attente de mesures…</p>
 <div id="sensor-charts"></div>
+<h2>Commandes du boîtier</h2>
+<p>
+  Commandes indisponibles : le firmware des actionneurs
+  n’est pas encore connecté à l’API.
+</p>
+
+<button type="button" disabled>Allumer la LED</button>
+<button type="button" disabled>Éteindre la LED</button>
+<button type="button" disabled>Déclencher le buzzer</button>
   <h2>Caméra en direct</h2>
 <p id="camera-status">En attente de la webcam…</p>
 <img
@@ -108,6 +121,31 @@ async function refreshSensors() {
     }
 
     const latest = readings[readings.length - 1];
+    const lastReadingDate = new Date(latest.timestamp);
+const recentReading =
+  Date.now() - lastReadingDate.getTime() < 10000;
+
+const deviceName = latest.source === "simulation"
+  ? "Simulation"
+  : "ESP8266";
+
+document.getElementById("device-status").textContent =
+  deviceName + (
+    recentReading
+      ? " — mesures reçues récemment"
+      : " — aucune mesure récente"
+  );
+
+document.getElementById("pir-status").textContent =
+  recentReading
+    ? (latest.pir
+        ? "PIR : présence signalée"
+        : "PIR : aucune présence signalée")
+    : "PIR : état actuel inconnu";
+
+document.getElementById("last-reading").textContent =
+  "Dernière mesure : " +
+  lastReadingDate.toLocaleString("fr-FR");
     const age = Date.now() - new Date(latest.timestamp).getTime();
     const source = latest.source === "simulation"
       ? "SIMULATION — données fictives"
