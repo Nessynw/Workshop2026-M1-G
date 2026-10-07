@@ -122,10 +122,48 @@ def receive_reading(reading: SensorReading):
     payload = json.dumps(reading.model_dump(mode="json"))
 
     with closing(sqlite3.connect(DATABASE)) as db:
+        db.execute("BEGIN IMMEDIATE")
+
+        previous_row = db.execute(
+            """
+            SELECT payload
+            FROM readings
+            WHERE json_extract(payload, '$.source') = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (reading.source,),
+        ).fetchone()
+
+        previous_anomaly = False
+
+        if previous_row:
+            previous = json.loads(previous_row[0])
+            previous_anomaly = previous.get("anomaly") is True
+
         db.execute(
             "INSERT INTO readings (payload) VALUES (?)",
             (payload,),
         )
+
+        # Une alerte au début d'un épisode atypique.
+        if reading.anomaly is True and not previous_anomaly:
+            alert = {
+                "timestamp": reading.timestamp.isoformat(),
+                "source": reading.source,
+                "type": "sensor_anomaly",
+                "model": "IsolationForest",
+                "temperature": reading.temperature,
+                "humidity": reading.humidity,
+                "gas_raw": reading.gas_raw,
+                "anomaly_score": reading.anomaly_score,
+            }
+
+            db.execute(
+                "INSERT INTO alerts (payload) VALUES (?)",
+                (json.dumps(alert),),
+            )
+
         db.commit()
 
     return {"status": "received"}

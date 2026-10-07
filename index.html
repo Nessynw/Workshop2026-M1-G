@@ -70,9 +70,11 @@
         for (const alert of alerts) {
           const item = document.createElement("li");
           const date = new Date(alert.timestamp).toLocaleString("fr-FR");
-          const label = alert.type === "human_presence"
-            ? "Présence humaine détectée"
-            : alert.type;
+          const label = {
+            human_presence: "Présence humaine détectée",
+            sensor_anomaly: "Mesure atypique détectée par l’IA"
+          }[alert.type] || alert.type;
+  
 
           item.textContent = `${date} — ${label} — ${alert.source}`;
           list.appendChild(item);
