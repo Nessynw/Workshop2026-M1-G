@@ -40,6 +40,9 @@
 <button type="button" disabled>Allumer la LED</button>
 <button type="button" disabled>Éteindre la LED</button>
 <button type="button" disabled>Déclencher le buzzer</button>
+<h2>Analyse IA des capteurs</h2>
+<p id="ai-status">En attente d’une mesure analysée…</p>
+<p id="ai-score"></p>
   <h2>Caméra en direct</h2>
 <p id="camera-status">En attente de la webcam…</p>
 <img
@@ -121,13 +124,44 @@ async function refreshSensors() {
     }
 
     const latest = readings[readings.length - 1];
+        const aiStatus = document.getElementById("ai-status");
+    const aiScore = document.getElementById("ai-score");
+
+    const aiDate = new Date(latest.timestamp);
+    const aiRecent = Date.now() - aiDate.getTime() < 10000;
+
+    if (typeof latest.anomaly === "boolean") {
+      const result = latest.anomaly
+        ? "Mesure atypique détectée"
+        : "Mesure habituelle selon le modèle";
+
+      aiStatus.textContent = aiRecent
+        ? result
+        : "Dernière analyse — " + result + " — mesure ancienne";
+
+      aiStatus.style.color = aiRecent
+        ? (latest.anomaly ? "#f87171" : "#4ade80")
+        : "#fbbf24";
+
+      aiScore.textContent =
+        typeof latest.anomaly_score === "number"
+          ? "Score IA : " + latest.anomaly_score.toFixed(4) +
+            " — score négatif : mesure atypique"
+          : "Score indisponible";
+    } else {
+      aiStatus.textContent = "Cette mesure n’a pas été analysée par l’IA.";
+      aiStatus.style.color = "#fbbf24";
+      aiScore.textContent = "";
+    }
     const lastReadingDate = new Date(latest.timestamp);
 const recentReading =
   Date.now() - lastReadingDate.getTime() < 10000;
 
-const deviceName = latest.source === "simulation"
-  ? "Simulation"
-  : "ESP8266";
+const deviceName = {
+  simulation: "Simulation Python",
+  esp8266: "ESP8266",
+  esp32_wokwi: "ESP32 Wokwi — données générées"
+}[latest.source] || latest.source;
 
 document.getElementById("device-status").textContent =
   deviceName + (
@@ -147,9 +181,7 @@ document.getElementById("last-reading").textContent =
   "Dernière mesure : " +
   lastReadingDate.toLocaleString("fr-FR");
     const age = Date.now() - new Date(latest.timestamp).getTime();
-    const source = latest.source === "simulation"
-      ? "SIMULATION — données fictives"
-      : "ESP8266";
+    const source = deviceName;
 
     status.textContent = source + (
       age < 10000

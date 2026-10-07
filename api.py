@@ -100,6 +100,11 @@ class SensorReading(BaseModel):
     humidity: float = Field(ge=0, le=100)
     gas_raw: float = Field(ge=0)
     pir: bool
+    anomaly: bool | None = None
+    anomaly_score: float | None = Field(
+        default=None,
+        allow_inf_nan=False,
+    )
 
 
 with closing(sqlite3.connect(DATABASE)) as db:

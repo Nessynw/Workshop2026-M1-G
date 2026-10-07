@@ -1,0 +1,15 @@
+{
+  "model": "IsolationForest",
+  "features": [
+    "temperature",
+    "humidity",
+    "gas_raw"
+  ],
+  "data_origin": "generateur_cpp_wokwi",
+  "dataset_sha256": "827d97b2bfe431cc6db23d3e8ea7424eb61bd93ece9b7097d1403d77d8edcc01",
+  "training_samples": 400,
+  "test_samples": 100,
+  "atypical_test_samples": 17,
+  "accuracy": null,
+  "note": "Données sans étiquettes : précision non mesurée."
+}

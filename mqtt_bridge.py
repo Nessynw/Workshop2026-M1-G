@@ -5,6 +5,7 @@ import ssl
 import urllib.error
 import urllib.request
 from pathlib import Path
+import joblib
 
 import paho.mqtt.client as mqtt
 
@@ -18,6 +19,11 @@ MQTT_TOPIC = "sentinel/sensors"
 MQTT_USER = "bridge"
 
 API_URL = "http://127.0.0.1:8000/api/v1/readings"
+MODEL_FILE = BASE_DIR / "models" / "anomaly_model.joblib"
+model_bundle = joblib.load(MODEL_FILE)
+
+MODEL = model_bundle["model"]
+FEATURES = model_bundle["features"]
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -51,6 +57,14 @@ def on_message(client, userdata, message):
             "gas_raw": data["gas_raw"],
             "pir": data["presence"],
         }
+        sample = [
+            [float(reading[name]) for name in FEATURES]
+        ]
+
+        score = float(MODEL.decision_function(sample)[0])
+
+        reading["anomaly"] = score < 0
+        reading["anomaly_score"] = score
 
         request = urllib.request.Request(
             API_URL,
