@@ -1,0 +1,26 @@
+{
+  "model": "IsolationForest",
+  "feature_version": "temporal_v1",
+  "features": [
+    "temperature_current",
+    "temperature_mean",
+    "temperature_change",
+    "temperature_slope_per_second",
+    "humidity_current",
+    "humidity_mean",
+    "humidity_change",
+    "humidity_slope_per_second",
+    "gas_raw_current",
+    "gas_raw_mean",
+    "gas_raw_change",
+    "gas_raw_slope_per_second"
+  ],
+  "window_size": 20,
+  "data_origin": "generateur_cpp_wokwi",
+  "dataset_sha256": "827d97b2bfe431cc6db23d3e8ea7424eb61bd93ece9b7097d1403d77d8edcc01",
+  "training_windows": 381,
+  "test_windows": 100,
+  "atypical_test_windows": 18,
+  "accuracy": null,
+  "note": "Fenêtres successives avec historique uniquement. Données sans étiquettes : précision non mesurée."
+}
