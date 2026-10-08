@@ -143,6 +143,23 @@ Les comptes Mosquitto utilisés sont :
 - `esp32` : envoi des mesures et réception des commandes ;
 - `bridge` : réception des mesures et envoi des commandes.
 
+
+## Configuration des accès à l’API et au dashboard
+
+Avant le premier lancement, exécuter depuis la racine du projet :
+
+```powershell
+.\.venv\Scripts\python.exe setup_security.py
+```
+
+Choisir un mot de passe de 12 caractères minimum, puis le confirmer.
+
+Le script crée un fichier `.env` contenant :
+- le mot de passe du dashboard sous forme de hash PBKDF2 ;
+- le secret utilisé pour signer les sessions ;
+- une clé API pour le bridge MQTT ;
+- une clé API distincte pour la caméra.
+- 
 ## 7. Lancement
 
 Exécuter les commandes suivantes depuis la racine du projet.
