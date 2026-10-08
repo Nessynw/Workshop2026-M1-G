@@ -1,8 +1,0 @@
-{
-  "data_origin": "simulation_nominale",
-  "training_windows": 2981,
-  "test_windows": 981,
-  "false_alerts_on_simulated_normal": 118,
-  "false_alert_rate_percent": 12.028542303771662,
-  "note": "Test sur fonctionnement normal synthétique uniquement. Détection des incidents et validation réelle à effectuer. Les fenêtres successives se chevauchent."
-}

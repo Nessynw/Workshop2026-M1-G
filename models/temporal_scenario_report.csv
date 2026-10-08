@@ -1,6 +1,0 @@
-scenario,score,prediction
-Valeurs constantes,0.09061130778700277,HABITUEL
-Hausse de température sur 4 secondes,0.023276238379571268,HABITUEL
-Hausse de gaz sur 4 secondes,0.07385100320748145,HABITUEL
-Hausse combinée sur 4 secondes,0.00634190723995548,HABITUEL
-Hausse combinée sur 60 secondes,0.028574990120622645,HABITUEL
