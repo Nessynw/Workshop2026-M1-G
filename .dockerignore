@@ -6,3 +6,9 @@ events.jsonl
 data/
 *.db
 *.db-*
+.pio/
+**/.pio/
+**/mqtt_secrets.h
+mosquitto/config/passwords
+mosquitto/certs/*.key
+.env.*

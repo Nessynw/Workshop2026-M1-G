@@ -1,5 +1,9 @@
 user esp32
 topic write sentinel/sensors
+topic read sentinel/commands
+topic write sentinel/device/state
 
 user bridge
 topic read sentinel/sensors
+topic write sentinel/commands
+topic read sentinel/device/state

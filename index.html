@@ -19,6 +19,9 @@
       border-radius: 8px;
     }
     ul { list-style: none; padding: 0; }
+    button { padding: 12px 18px; margin: 4px; border-radius: 8px;
+      background: #4ade80; color: #101827; border: 0; cursor: pointer; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -32,14 +35,15 @@
 <p id="sensor-status">En attente de mesures…</p>
 <div id="sensor-charts"></div>
 <h2>Commandes du boîtier</h2>
-<p>
-  Commandes indisponibles : le firmware des actionneurs
-  n’est pas encore connecté à l’API.
-</p>
-
-<button type="button" disabled>Allumer la LED</button>
-<button type="button" disabled>Éteindre la LED</button>
-<button type="button" disabled>Déclencher le buzzer</button>
+<p id="actuator-status">En attente du firmware et du bridge…</p>
+<div id="actuator-buttons">
+  <button type="button" data-action="led_on" disabled>Allumer la LED</button>
+  <button type="button" data-action="led_off" disabled>Éteindre la LED</button>
+  <button type="button" data-action="buzzer_on" disabled>Buzzer — 2 secondes</button>
+  <button type="button" data-action="buzzer_off" disabled>Arrêter le buzzer</button>
+</div>
+<p id="command-feedback" role="status" aria-live="polite"></p>
+<ul id="command-history"></ul>
 <h2>Analyse IA des capteurs</h2>
 <p id="ai-status">En attente d’une mesure analysée…</p>
 <p id="ai-score"></p>
@@ -54,6 +58,73 @@
   <ul id="alerts"></ul>
 
   <script>
+    const commandLabels = {
+      led_on: "Allumer la LED", led_off: "Éteindre la LED",
+      buzzer_on: "Buzzer 2 s", buzzer_off: "Arrêter le buzzer"
+    };
+    const commandStates = {
+      queued: "En attente", sent: "Envoyée — confirmation ESP attendue",
+      executed: "Exécutée par l’ESP", rejected: "Refusée par l’ESP",
+      expired: "Expirée — aucune confirmation", failed: "Échec d’envoi"
+    };
+    let commandBusy = false;
+    let actuatorOnline = false;
+    function updateButtons() {
+      document.querySelectorAll("[data-action]").forEach(button => {
+        button.disabled = commandBusy || !actuatorOnline;
+      });
+    }
+    document.querySelectorAll("[data-action]").forEach(button => {
+      button.addEventListener("click", async () => {
+        commandBusy = true;
+        updateButtons();
+        const feedback = document.getElementById("command-feedback");
+        try {
+          const response = await fetch("/api/v1/commands", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({action: button.dataset.action})
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || "Commande refusée");
+          feedback.textContent = "Commande enregistrée ; confirmation ESP attendue.";
+        } catch (error) {
+          feedback.textContent = error.message;
+        } finally {
+          commandBusy = false;
+          updateButtons();
+        }
+      });
+    });
+    async function refreshActuators() {
+      const status = document.getElementById("actuator-status");
+      try {
+        const responses = await Promise.all([
+          fetch("/api/v1/device/state"), fetch("/api/v1/commands")
+        ]);
+        if (responses.some(response => !response.ok)) throw new Error();
+        const state = await responses[0].json();
+        const commands = await responses[1].json();
+        actuatorOnline = state.online && state.actuators_supported;
+        status.textContent = actuatorOnline
+          ? `ESP connecté — LED : ${state.led ? "allumée" : "éteinte"} — Buzzer : ${state.buzzer ? "actif" : "arrêté"}`
+          : "Commandes indisponibles — lancer le bridge et la simulation ESP.";
+        const history = document.getElementById("command-history");
+        history.replaceChildren();
+        commands.slice(0, 5).forEach(command => {
+          const item = document.createElement("li");
+          item.textContent = `${commandLabels[command.action]} — ${commandStates[command.status] || command.status}`;
+          history.appendChild(item);
+        });
+      } catch (error) {
+        actuatorOnline = false;
+        status.textContent = "État des actionneurs indisponible.";
+      } finally {
+        updateButtons();
+        setTimeout(refreshActuators, 1000);
+      }
+    }
+    refreshActuators();
+
     async function refresh() {
       const status = document.getElementById("status");
 

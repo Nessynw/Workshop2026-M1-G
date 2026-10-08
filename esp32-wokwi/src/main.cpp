@@ -26,6 +26,11 @@ const char* MQTT_TOPIC = "sentinel/sensors";
 WiFiClientSecure espClient;
 PubSubClient mqttClient(espClient);
 
+// false : lecture des capteurs du circuit Wokwi en continu.
+// true : ancien generateur de 500 mesures conserve pour l'analyse.
+const bool USE_GENERATED_DATA = false;
+#include "device_io.h"
+
 // ======================================================
 // Configuration de la génération
 // ======================================================
@@ -504,6 +509,8 @@ void reconnectMQTT() {
             MQTT_PASSWORD
         )) {
       Serial.println("MQTTS connecté !");
+      mqttClient.subscribe(COMMAND_TOPIC, 1);
+      publishDeviceState();
 
     } else {
 
@@ -627,7 +634,9 @@ void publishMeasurement() {
       presenceChange
   );
 
-  json += "}";
+  json += ",\"data_mode\":\"";
+  json += USE_GENERATED_DATA ? "generated" : "sensors";
+  json += "\"}";
 
   // ------------------------------------------------------
   // Publication MQTT robuste
@@ -695,7 +704,7 @@ void publishMeasurement() {
   // Fin après 500 mesures envoyées
   // ------------------------------------------------------
 
-  if (sampleCount >= MAX_SAMPLES) {
+  if (USE_GENERATED_DATA && sampleCount >= MAX_SAMPLES) {
 
     generationFinished =
         true;
@@ -727,6 +736,7 @@ void publishMeasurement() {
 void setup() {
 
   Serial.begin(115200);
+  initializeDeviceIO();
 
   // Initialisation du hasard
   randomSeed(
@@ -797,6 +807,7 @@ void setup() {
       512
   );
 
+  mqttClient.setCallback(commandCallback);
   reconnectMQTT();
 
   // ====================================================
@@ -807,13 +818,13 @@ void setup() {
 
   Serial.println();
 
-  Serial.println(
-      "Début de génération des 500 mesures..."
-  );
+  Serial.println(USE_GENERATED_DATA
+      ? "Generation de 500 mesures synthetiques."
+      : "Lecture continue des capteurs du circuit Wokwi.");
 
-  Serial.println(
-      "Une mesure toutes les 200 ms."
-  );
+  Serial.println(USE_GENERATED_DATA
+      ? "Une mesure generee toutes les 200 ms."
+      : "Une lecture des capteurs toutes les 2 secondes.");
 
   Serial.println();
 }
@@ -823,40 +834,35 @@ void setup() {
 // ======================================================
 
 void loop() {
-
-  // Maintenir la connexion MQTT
-  if (!mqttClient.connected()) {
-
-    Serial.println(
-        "Connexion MQTTS perdue !"
-    );
-
-    reconnectMQTT();
-  }
-
+  serviceDeviceIO();
+  if (!mqttClient.connected()) reconnectMQTT();
   mqttClient.loop();
 
-  // Une fois les 500 lignes générées,
-  // on ne génère plus rien
-  if (generationFinished) {
-
-    delay(1000);
-
+  if (!USE_GENERATED_DATA) {
+    // Le DHT22 doit etre lu a une cadence de deux secondes.
+    static unsigned long lastRead = 0;
+    if (millis() - lastRead >= 2000) {
+      lastRead = millis();
+      TempAndHumidity values = dht.getTempAndHumidity();
+      if (!isnan(values.temperature) && !isnan(values.humidity)) {
+        currentMeasurement.temperature = values.temperature;
+        currentMeasurement.humidity = values.humidity;
+        currentMeasurement.gasRaw = analogRead(GAS_PIN);
+        currentMeasurement.presence = digitalRead(PIR_PIN) == HIGH;
+        publishMeasurement();
+      } else {
+        Serial.println("Lecture DHT22 invalide ; nouvelle tentative dans 2 s.");
+      }
+    }
+    delay(5);
     return;
   }
 
-  // Première ligne
-  if (firstMeasurement) {
-
-    publishMeasurement();
-
-  } else {
-
-    generateNextMeasurement();
-
-    publishMeasurement();
+  if (generationFinished) {
+    waitWithIO(100);
+    return;
   }
-
-  // 200 ms entre deux lignes
-  delay(PUBLISH_INTERVAL);
+  if (!firstMeasurement) generateNextMeasurement();
+  publishMeasurement();
+  waitWithIO(PUBLISH_INTERVAL);
 }

@@ -1,19 +1,58 @@
 services:
   sentinel:
     build: .
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
       - alerts-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    # Uniquement pour migrer la propriété du volume, puis abandonner root.
+    cap_add: [CHOWN, SETUID, SETGID]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 100
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   mosquitto:
     image: eclipse-mosquitto:2
+    user: "1883:1883"
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8883:8883"
     volumes:
       - ./mosquitto/config:/mosquitto/config:ro
       - ./mosquitto/certs/server.crt:/mosquitto/certs/server.crt:ro
       - ./mosquitto/certs/server.key:/mosquitto/certs/server.key:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 50
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   alerts-data:
