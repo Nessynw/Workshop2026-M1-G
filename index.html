@@ -1,63 +1,71 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sentinel-X</title>
-  <style>
-    body {
-      background: #101827;
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 25px;
-    }
-    h1 { color: #4ade80; }
-    li {
-      background: #243047;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-    }
-    ul { list-style: none; padding: 0; }
-    button { padding: 12px 18px; margin: 4px; border-radius: 8px;
-      background: #4ade80; color: #101827; border: 0; cursor: pointer; }
-    button:disabled { opacity: .4; cursor: not-allowed; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel-X · Centre de contrôle</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+:root{--bg:#f3f5f7;--ink:#18252e;--muted:#73808a;--line:#e7ebef;--mint:#b8f4d0;--green:#198754;--nav:#14252a;--white:#fff}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:25px}body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',Arial,sans-serif;font-size:14px}button,a{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible{outline:3px solid #36bc8a;outline-offset:4px}
+.sidebar{position:fixed;inset:0 auto 0 0;width:224px;background:var(--nav);color:#d5e1e1;display:flex;flex-direction:column;padding:32px 20px;z-index:5}.brand{display:flex;align-items:center;gap:12px;color:#fff;font-family:'Space Grotesk',Arial,sans-serif;font-size:21px;font-weight:700;letter-spacing:-1px}.brand-icon{width:35px;height:39px;background:var(--mint);color:var(--nav);display:grid;place-items:center;clip-path:polygon(0 0,100% 0,100% 68%,50% 100%,0 68%);font-size:20px}.brand small{display:block;color:#799396;font:10px 'DM Sans',Arial;letter-spacing:2px;margin-top:5px}.nav-title{margin:48px 14px 16px;color:#718c91;font-size:10px;letter-spacing:2px}.sidebar nav{display:grid;gap:8px}.sidebar a{display:flex;gap:13px;align-items:center;padding:13px 14px;color:#aebfc2;text-decoration:none;border-radius:9px;font-size:13px}.sidebar a.active{background:#264039;color:var(--mint)}.sidebar a:hover{background:#243b40;color:white}.nav-icon{font-size:18px;width:20px;text-align:center}.sidebar-bottom{margin-top:auto;border-top:1px solid #2c4045;padding:23px 12px 0;color:#789397;font-size:11px;line-height:1.8}.sidebar-bottom strong{color:#c1d4d5;display:block;font-weight:500}
+main{margin-left:224px;padding:34px 42px 24px;max-width:1840px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid var(--line);padding-bottom:24px}.eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700}.topbar h1{font-family:'Space Grotesk',Arial,sans-serif;font-size:29px;letter-spacing:-1px;margin:8px 0 0;font-weight:600}.pill{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:30px;font-size:11px;color:var(--muted);max-width:340px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex:none}.intro{display:flex;justify-content:space-between;gap:15px;align-items:flex-end;margin:30px 0 22px}.intro h2{font:600 21px 'Space Grotesk',Arial;margin:0 0 6px}.intro p{margin:0;color:var(--muted);font-size:12px}.intro .tag{border:1px solid #cfddd7;padding:7px 10px;border-radius:6px;color:#527a66;font-size:10px;letter-spacing:1px;white-space:nowrap}
+.overview{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:18px;margin-bottom:28px}.summary{background:white;border:1px solid var(--line);padding:22px 24px;border-radius:13px;min-height:125px}.summary.primary{background:var(--nav);color:white;border:none}.summary .eyebrow{color:#88979d}.summary.primary .eyebrow{color:#87aba4}.summary p{margin:15px 0 0;line-height:1.5;font-size:13px;font-weight:500}.summary small{display:block;margin-top:8px;color:#7f9399;font-size:10px;line-height:1.5}.summary .summary-icon{float:right;font-size:21px;color:#87aaa0}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px}.section-heading h2{font:600 17px 'Space Grotesk',Arial;margin:0;letter-spacing:-.3px}.section-heading span{color:var(--muted);font-size:11px}.sensor-section{margin-bottom:28px}#sensor-status{color:var(--muted);font-size:11px;margin:0 0 14px}#sensor-charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.sensor-card{min-width:0;background:#fff;border:1px solid var(--line);border-radius:13px;padding:22px 22px 16px}.sensor-card .metric-label{font-size:11px;color:var(--muted);margin:0 0 12px;font-weight:500}.metric-value{font:500 31px 'Space Grotesk',Arial;letter-spacing:-1px;margin:0 0 16px}.metric-value small{font-size:14px;letter-spacing:0;color:var(--muted);margin-left:5px}.sensor-card canvas{display:block;width:100%;height:105px}.sensor-card .chart-caption{font-size:10px;color:var(--muted);padding-top:12px;border-top:1px solid var(--line);margin:12px 0 0}
+.workspace{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;align-items:start}.panel{background:white;border:1px solid var(--line);border-radius:13px;padding:24px;margin-bottom:22px}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.panel h2{font:600 17px 'Space Grotesk',Arial;margin:0}.panel-head .label{font-size:9px;letter-spacing:1.5px;color:var(--muted)}.panel p{color:var(--muted);font-size:12px;line-height:1.6}.camera-frame{position:relative;aspect-ratio:4/3;background:#142127;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center}.camera-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}.camera-empty{color:#6b8489;text-align:center;font-size:11px;line-height:2}.camera-empty span{font-size:38px;display:block;color:#526e73;margin-bottom:6px}.camera-footer{display:flex;justify-content:space-between;gap:12px;margin-top:13px;align-items:center}.camera-footer p{margin:0;font-size:10px}.live-label{font-size:9px;letter-spacing:1.5px;color:#73858a;border:1px solid #dce6e3;border-radius:4px;padding:5px 7px}
+#actuator-status{font-size:11px;margin:0 0 20px}.control-label{font-size:10px;color:var(--muted);display:flex;justify-content:space-between;margin:18px 0 10px}.control-label strong{font-weight:500;color:var(--ink)}.button-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}button{min-height:41px;padding:10px 12px;border:1px solid var(--line);border-radius:7px;font:500 11px 'DM Sans',Arial;background:#f8faf9;color:var(--ink);cursor:pointer;transition:background .15s,transform .15s}button:hover{background:#e7f8ee}button:active{transform:translateY(1px)}button.primary-button{background:var(--mint);border-color:var(--mint);color:#16402e}button:disabled{opacity:.42;cursor:not-allowed}#command-feedback{min-height:18px;margin:14px 0 0;font-size:10px}ul{list-style:none;padding:0;margin:0}#command-history{max-height:154px;overflow:auto;margin-top:15px}#command-history li{font-size:10px;padding:9px 0;border-top:1px solid var(--line);line-height:1.5;color:#71818a}#command-history li[data-state=executed]{color:var(--green)}#command-history li[data-state=rejected],#command-history li[data-state=failed]{color:#b86444}
+.ai-panel{background:#e9f1ed;border:1px solid #d9e5df}.ai-panel p{margin-bottom:0}#ai-status{font-size:12px;font-weight:500;color:#567566}#ai-score{font-size:10px;color:#70877a}.alert-panel{padding-bottom:10px}#alerts{max-height:260px;overflow:auto}#alerts li{position:relative;font-size:11px;padding:14px 14px 14px 22px;border-top:1px solid var(--line);line-height:1.7;color:#657780}#alerts li:before{content:'';position:absolute;top:21px;left:2px;width:6px;height:6px;border-radius:50%;background:#dba96a}.footer{display:flex;justify-content:space-between;color:#8b969d;font-size:10px;padding:8px 0 12px;gap:15px}
+@media(min-width:1500px){main{padding-left:58px;padding-right:58px}.camera-frame{max-height:450px}}@media(max-width:1100px){.sidebar{width:180px;padding:25px 14px}.brand{font-size:17px}main{margin-left:180px;padding:26px 24px}.overview{gap:12px}.summary{padding:18px}.workspace{gap:16px}.sensor-card{padding:17px 14px}.metric-value{font-size:27px}}@media(max-width:800px){.sidebar{position:static;width:auto;padding:17px 22px;flex-direction:row;align-items:center;justify-content:space-between}.sidebar .nav-title,.sidebar-bottom,.brand small{display:none}.sidebar nav{display:flex;gap:4px}.sidebar a{padding:9px}.sidebar a .nav-text{display:none}.brand-icon{width:28px;height:31px;font-size:17px}main{margin-left:0;padding:23px 20px}.topbar h1{font-size:24px}.overview{grid-template-columns:1fr}.summary{min-height:auto}.summary p{margin-top:9px}.workspace{grid-template-columns:1fr}.intro .tag{display:none}}@media(max-width:540px){#sensor-charts{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column;gap:12px}.topbar .pill{padding:7px 11px}.panel{padding:19px}.footer{flex-direction:column}.sensor-card canvas{height:110px}}
+
+/* Thème noir */
+:root{--bg:#080b0d;--ink:#edf3f1;--muted:#93a29e;--line:#25312e;--mint:#a8edc4;--green:#64d69a;--nav:#0e1715;--white:#131b18}
+.sidebar{background:#0b1210;border-right:1px solid #21302a}.topbar .pill,.summary,.sensor-card,.panel{background:#131b18;border-color:#25312e}.summary.primary{background:#172b22;border:1px solid #2b4939}.summary small{color:#8da69a}.summary p{color:#e9f2ed}.sidebar a.active{background:#1e382b;color:#b8f4d0}.sidebar a:hover{background:#1b2b23}.intro .tag{border-color:#31483b;color:#a4c6b2}.camera-frame{background:#050908}.live-label{color:#a0bbb0;border-color:#31483b}.ai-panel{background:#15251c;border-color:#304637}button{background:#1c2922;border-color:#324339;color:#e3eee7}button:hover{background:#2a3f31}button.primary-button{background:#a8edc4;color:#102b1c;border-color:#a8edc4}#ai-score{color:#a1b5a8}#command-history li{color:#a6b7ae}#command-history li[data-state=rejected],#command-history li[data-state=failed]{color:#efaa8b}#alerts li{color:#b5c3bc}.footer{color:#87978e}
+
+/* États de détection : toujours accompagnés d'un texte. */
+.summary[data-state="danger"],.ai-panel[data-state="danger"]{background:#36171b;border:1px solid #963b45;box-shadow:inset 3px 0 #ff6471}
+.summary[data-state="safe"],.ai-panel[data-state="safe"]{background:#142b1e;border:1px solid #35744c;box-shadow:inset 3px 0 #65df94}
+.summary[data-state="unknown"],.ai-panel[data-state="unknown"]{background:#292417;border:1px solid #685633;box-shadow:inset 3px 0 #dfbd72}
+[data-state="danger"] #pir-status,[data-state="danger"] #ai-status{color:#ff919a!important}
+[data-state="safe"] #pir-status,[data-state="safe"] #ai-status{color:#85efab!important}
+[data-state="unknown"] #pir-status,[data-state="unknown"] #ai-status{color:#e7c783!important}
+#alerts li[data-detection="true"]{color:#ffa0a8;background:#251517}#alerts li[data-detection="true"]:before{background:#ff6471}
+</style>
 </head>
 <body>
-  <h1>SENTINEL-X</h1>
-  <p id="status">Connexion à l’API…</p>
-  <h2>Statut du boîtier</h2>
-<p id="device-status">En attente de mesures…</p>
-<p id="pir-status">PIR : inconnu</p>
-<p id="last-reading">Dernière mesure : inconnue</p>
-  <h2>Capteurs</h2>
-<p id="sensor-status">En attente de mesures…</p>
-<div id="sensor-charts"></div>
-<h2>Commandes du boîtier</h2>
-<p id="actuator-status">En attente du firmware et du bridge…</p>
-<div id="actuator-buttons">
-  <button type="button" data-action="led_on" disabled>Allumer la LED</button>
-  <button type="button" data-action="led_off" disabled>Éteindre la LED</button>
-  <button type="button" data-action="buzzer_on" disabled>Buzzer — 2 secondes</button>
-  <button type="button" data-action="buzzer_off" disabled>Arrêter le buzzer</button>
-</div>
-<p id="command-feedback" role="status" aria-live="polite"></p>
-<ul id="command-history"></ul>
-<h2>Analyse IA des capteurs</h2>
-<p id="ai-status">En attente d’une mesure analysée…</p>
-<p id="ai-score"></p>
-  <h2>Caméra en direct</h2>
-<p id="camera-status">En attente de la webcam…</p>
-<img
-  id="camera"
-  alt="Image de la webcam avec les détections"
-  style="width:100%; max-width:640px; display:none;"
->
-  <h2>Dernières alertes</h2>
-  <ul id="alerts"></ul>
-
-  <script>
+<aside class="sidebar">
+  <div class="brand"><span class="brand-icon">S</span><div>SENTINEL<span style="color:#b8f4d0">·X</span><small>AETHER CORP / SUPERVISION</small></div></div>
+  <div class="nav-title">ESPACE DE CONTRÔLE</div>
+  <nav aria-label="Navigation principale">
+    <a href="#overview" class="active"><span class="nav-icon">▦</span><span class="nav-text">Vue d’ensemble</span></a>
+    <a href="#sensors"><span class="nav-icon">∿</span><span class="nav-text">Capteurs</span></a>
+    <a href="#controls"><span class="nav-icon">⊙</span><span class="nav-text">Commandes</span></a>
+    <a href="#vision"><span class="nav-icon">◉</span><span class="nav-text">Vision</span></a>
+    <a href="#activity"><span class="nav-icon">≡</span><span class="nav-text">Journal d’alertes</span></a>
+  </nav>
+  <div class="sidebar-bottom"><strong>Workshop 2026</strong>Supervision du parc informatique<br>Prototype Sentinel-X</div>
+</aside>
+<main id="overview">
+  <header class="topbar"><div><div class="eyebrow">Supervision environnementale</div><h1>Centre de contrôle</h1></div><div class="pill"><span class="dot" id="api-dot"></span><span id="status">Connexion à l’API…</span></div></header>
+  <div class="intro"><div><h2>Votre environnement, en un regard.</h2><p>Mesures des capteurs, vision et commandes du boîtier.</p></div><span class="tag">SENTINEL-X / LOCAL</span></div>
+  <section class="overview" aria-label="État du système">
+    <article class="summary primary"><span class="summary-icon">⌁</span><div class="eyebrow">Boîtier & connexion</div><p id="device-status">En attente de mesures…</p><small id="last-reading">Dernière mesure : inconnue</small></article>
+    <article class="summary"><span class="summary-icon">◎</span><div class="eyebrow">Détection de mouvement</div><p id="pir-status">PIR : état inconnu</p><small>Capteur de présence infrarouge</small></article>
+    <article class="summary"><span class="summary-icon">↗</span><div class="eyebrow">Canal de commande</div><p id="connection-summary">Vérification du boîtier…</p><small>Confirmation après exécution par l’ESP</small></article>
+  </section>
+  <section class="sensor-section" id="sensors"><div class="section-heading"><h2>Mesures environnementales</h2><span>Historique récent</span></div><p id="sensor-status">En attente de mesures…</p><div id="sensor-charts"></div></section>
+  <div class="workspace">
+    <div>
+      <section class="panel" id="vision"><div class="panel-head"><h2>Caméra en direct</h2><span class="label">VISION</span></div><div class="camera-frame"><div class="camera-empty"><span>◎</span>En attente du flux caméra</div><img id="camera" alt="Flux webcam avec les détections humaines" style="display:none"></div><div class="camera-footer"><p id="camera-status">Connexion à la webcam…</p><span class="live-label">FLUX LOCAL</span></div></section>
+      <section class="panel alert-panel" id="activity"><div class="panel-head"><h2>Journal d’alertes</h2><span class="label">DERNIERS ÉVÉNEMENTS</span></div><ul id="alerts"><li>Chargement des événements…</li></ul></section>
+    </div>
+    <div>
+      <section class="panel" id="controls"><div class="panel-head"><h2>Commandes du boîtier</h2><span class="label">ACTIONNEURS</span></div><p id="actuator-status">En attente du firmware et du bridge…</p><div id="actuator-buttons"><div class="control-label"><strong>LED rouge</strong><span>Indicateur commandable</span></div><div class="button-row"><button type="button" class="primary-button" data-action="led_on" disabled>Allumer la LED</button><button type="button" data-action="led_off" disabled>Éteindre la LED</button></div><div class="control-label"><strong>Buzzer</strong><span>Signal sonore</span></div><div class="button-row"><button type="button" class="primary-button" data-action="buzzer_on" disabled>Bip · 2 secondes</button><button type="button" data-action="buzzer_off" disabled>Arrêter le buzzer</button></div></div><p id="command-feedback" role="status" aria-live="polite"></p><ul id="command-history"></ul></section>
+      <section class="panel ai-panel"><div class="panel-head"><h2>Analyse des capteurs</h2><span class="label">MODÈLE IA</span></div><p id="ai-status">En attente d’une mesure analysée…</p><p id="ai-score"></p></section>
+    </div>
+  </div>
+  <footer class="footer"><span>Sentinel-X · AetherCorp</span><span>Les états affichés proviennent des dernières données reçues.</span></footer>
+</main>
+<script>
     const commandLabels = {
       led_on: "Allumer la LED", led_off: "Éteindre la LED",
       buzzer_on: "Buzzer 2 s", buzzer_off: "Arrêter le buzzer"
@@ -108,16 +116,19 @@
         status.textContent = actuatorOnline
           ? `ESP connecté — LED : ${state.led ? "allumée" : "éteinte"} — Buzzer : ${state.buzzer ? "actif" : "arrêté"}`
           : "Commandes indisponibles — lancer le bridge et la simulation ESP.";
+        document.getElementById("connection-summary").textContent = actuatorOnline ? "Boîtier connecté" : "Boîtier hors ligne";
         const history = document.getElementById("command-history");
         history.replaceChildren();
         commands.slice(0, 5).forEach(command => {
           const item = document.createElement("li");
+          item.dataset.state = command.status;
           item.textContent = `${commandLabels[command.action]} — ${commandStates[command.status] || command.status}`;
           history.appendChild(item);
         });
       } catch (error) {
         actuatorOnline = false;
         status.textContent = "État des actionneurs indisponible.";
+        document.getElementById("connection-summary").textContent = "Connexion indisponible";
       } finally {
         updateButtons();
         setTimeout(refreshActuators, 1000);
@@ -134,15 +145,20 @@
 
         const alerts = await response.json();
         status.textContent = "API connectée";
+        document.getElementById("api-dot").style.background = "#198754";
 
         const list = document.getElementById("alerts");
         list.replaceChildren();
 
         for (const alert of alerts) {
           const item = document.createElement("li");
+          item.dataset.detection = String(["human_presence", "multiple_faces", "sensor_anomaly"].includes(alert.type));
           const date = new Date(alert.timestamp).toLocaleString("fr-FR");
           const label = {
             human_presence: "Présence humaine détectée",
+            multiple_faces: typeof alert.face_count === "number"
+              ? `${alert.face_count} visages détectés simultanément`
+              : "Plusieurs visages détectés simultanément",
             sensor_anomaly: "Mesure atypique détectée par l’IA"
           }[alert.type] || alert.type;
   
@@ -158,6 +174,7 @@
         }
       } catch (error) {
         status.textContent = "API inaccessible — données non actualisées";
+        document.getElementById("api-dot").style.background = "#b86444";
       } finally {
         setTimeout(refresh, 2000);
       }
@@ -199,10 +216,12 @@ async function refreshSensors() {
     const latest = readings[readings.length - 1];
         const aiStatus = document.getElementById("ai-status");
     const aiScore = document.getElementById("ai-score");
+    const aiPanel = aiStatus.closest("section");
 
     const aiDate = new Date(latest.timestamp);
     const aiRecent = Date.now() - aiDate.getTime() < 10000;
 
+    aiPanel.dataset.state = !aiRecent || typeof latest.anomaly !== "boolean" ? "unknown" : (latest.anomaly ? "danger" : "safe");
     if (typeof latest.anomaly === "boolean") {
       const result = latest.anomaly
         ? "Mesure atypique détectée"
@@ -213,8 +232,8 @@ async function refreshSensors() {
         : "Dernière analyse — " + result + " — mesure ancienne";
 
       aiStatus.style.color = aiRecent
-        ? (latest.anomaly ? "#f87171" : "#4ade80")
-        : "#fbbf24";
+        ? (latest.anomaly ? "#f09087" : "#64d69a")
+        : "#e7c783";
 
       aiScore.textContent =
         typeof latest.anomaly_score === "number"
@@ -223,17 +242,20 @@ async function refreshSensors() {
           : "Score indisponible";
     } else {
       aiStatus.textContent = "Cette mesure n’a pas été analysée par l’IA.";
-      aiStatus.style.color = "#fbbf24";
+      aiStatus.style.color = "#e7c783";
       aiScore.textContent = "";
     }
     const lastReadingDate = new Date(latest.timestamp);
 const recentReading =
   Date.now() - lastReadingDate.getTime() < 10000;
 
+const presencePanel = document.getElementById("pir-status").closest("article");
+ presencePanel.dataset.state = !recentReading ? "unknown" : (latest.pir ? "danger" : "safe");
+
 const deviceName = {
   simulation: "Simulation Python",
   esp8266: "ESP8266",
-  esp32_wokwi: "ESP32 Wokwi — données générées"
+  esp32_wokwi: latest.data_mode === "sensors" ? "ESP32 Wokwi · capteurs" : "ESP32 Wokwi · générateur"
 }[latest.source] || latest.source;
 
 document.getElementById("device-status").textContent =
@@ -246,8 +268,8 @@ document.getElementById("device-status").textContent =
 document.getElementById("pir-status").textContent =
   recentReading
     ? (latest.pir
-        ? "PIR : présence signalée"
-        : "PIR : aucune présence signalée")
+        ? "Présence détectée"
+        : "Aucune présence détectée")
     : "PIR : état actuel inconnu";
 
 document.getElementById("last-reading").textContent =
@@ -277,18 +299,26 @@ document.getElementById("last-reading").textContent =
 
     for (const [key, label, unit] of charts) {
       const panel = document.createElement("div");
-      panel.style.marginBottom = "25px";
+      panel.className = "sensor-card";
 
       const title = document.createElement("h3");
-      title.textContent = `${label} : ${latest[key]} ${unit}`;
+      title.className = "metric-label";
+      title.textContent = label;
+      const metric = document.createElement("p");
+      metric.className = "metric-value";
+      metric.textContent = Number(latest[key]).toLocaleString("fr-FR", {maximumFractionDigits: 2});
+      const suffix = document.createElement("small");
+      suffix.textContent = unit || "ADC";
+      metric.appendChild(suffix);
       panel.appendChild(title);
+      panel.appendChild(metric);
 
       const canvas = document.createElement("canvas");
       canvas.width = 600;
       canvas.height = 160;
       canvas.style.width = "100%";
-      canvas.style.maxWidth = "600px";
-      canvas.style.background = "#243047";
+      
+      canvas.style.background = "#131b18";
       panel.appendChild(canvas);
 
       const values = series.map(reading => reading[key]);
@@ -297,7 +327,7 @@ document.getElementById("last-reading").textContent =
       const span = maximum - minimum || 1;
       const ctx = canvas.getContext("2d");
 
-      ctx.fillStyle = "white";
+      ctx.fillStyle = "#819198";
       ctx.font = "12px Arial";
       ctx.fillText(`Max : ${maximum} ${unit}`, 10, 18);
       ctx.fillText(`Min : ${minimum} ${unit}`, 10, 145);
@@ -306,7 +336,7 @@ document.getElementById("last-reading").textContent =
       const lastTime = new Date(latest.timestamp).getTime();
       const duration = lastTime - firstTime || 1;
 
-      ctx.strokeStyle = "#4ade80";
+      ctx.strokeStyle = "#64d69a";
       ctx.lineWidth = 2;
       ctx.beginPath();
 
@@ -319,7 +349,7 @@ document.getElementById("last-reading").textContent =
         else ctx.lineTo(x, y);
 
         if (values.length === 1) {
-          ctx.fillStyle = "#4ade80";
+          ctx.fillStyle = "#64d69a";
           ctx.fillRect(x - 2, y - 2, 4, 4);
         }
       });
@@ -327,6 +357,7 @@ document.getElementById("last-reading").textContent =
       ctx.stroke();
 
       const caption = document.createElement("p");
+      caption.className = "chart-caption";
       caption.textContent =
         new Date(series[0].timestamp).toLocaleTimeString("fr-FR") +
         " → " +
@@ -337,12 +368,21 @@ document.getElementById("last-reading").textContent =
     }
   } catch (error) {
     status.textContent = "Impossible de récupérer les mesures.";
+    document.getElementById("pir-status").closest("article").dataset.state = "unknown";
+    document.getElementById("pir-status").textContent = "Présence : état inconnu";
+    document.getElementById("ai-status").closest("section").dataset.state = "unknown";
+    document.getElementById("ai-status").textContent = "Analyse indisponible — connexion interrompue";
   } finally {
     setTimeout(refreshSensors, 2000);
   }
 }
 
 refreshSensors();
-  </script>
+  
+document.querySelectorAll('.sidebar nav a').forEach(link => link.addEventListener('click', () => {
+  document.querySelectorAll('.sidebar nav a').forEach(item => item.classList.remove('active'));
+  link.classList.add('active');
+}));
+</script>
 </body>
 </html>

@@ -32,6 +32,7 @@ class Alert(BaseModel):
     source: str
     type: str
     model: str
+    face_count: int | None = None
 
 
 @app.get("/")

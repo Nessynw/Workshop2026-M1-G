@@ -15,18 +15,21 @@ HEIGHT = 480
 ALERT_LOG = Path(__file__).resolve().parent / "events.jsonl"
 
 
-def log_alert(method):
+def log_alert(method, event_type="human_presence", face_count=None):
     event = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "source": "webcam_pc",
-        "type": "human_presence",
+        "type": event_type,
         "model": method,
     }
+    if face_count is not None:
+        event["face_count"] = face_count
 
     with ALERT_LOG.open("a", encoding="utf-8") as file:
         file.write(json.dumps(event) + "\n")
 
-    print("ALERTE : présence humaine détectée")
+    print(f"ALERTE : {face_count} visages détectés" if event_type == "multiple_faces"
+          else "ALERTE : présence humaine détectée")
 
     try:
         request = urllib.request.Request(
@@ -43,23 +46,24 @@ def log_alert(method):
         print("Impossible d’envoyer l’alerte :", error)
 
 
+def detect_faces(frame, face_model):
+    """YuNet fournit les visages et supprime les rectangles en double."""
+    face_model.setInputSize((frame.shape[1], frame.shape[0]))
+    _, rows = face_model.detect(frame)
+    if rows is None:
+        return []
+    return [
+        (int(row[0]), int(row[1]), int(row[2]), int(row[3]), "Visage / YuNet")
+        for row in rows
+        if row[2] >= 30 and row[3] >= 30
+    ]
+
+
 def detect_people(frame, face_model, body_model):
-    """Détecte un visage proche, sinon cherche des corps entiers."""
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    faces = face_model.detectMultiScale(
-        gray,
-        scaleFactor=1.15,
-        minNeighbors=5,
-        minSize=(40, 40),
-    )
-
+    """Compte les visages avec YuNet ; HOG conserve la détection des corps."""
+    faces = detect_faces(frame, face_model)
     if len(faces):
-        # Détection humaine avec le modèle Haar.
-        return [
-            (int(x), int(y), int(w), int(h), "Visage / Haar")
-            for x, y, w, h in faces
-        ]
+        return faces
 
     # Image réduite pour limiter le temps de calcul.
     small = cv2.resize(frame, (320, 240))
@@ -113,11 +117,13 @@ def send_frame(frame):
 def main():
     cv2.setNumThreads(2)
 
-    face_model = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    model_file = Path(__file__).resolve().parent / "models" / "face_detection_yunet_2023mar.onnx"
+    if not model_file.is_file():
+        raise RuntimeError("Modèle YuNet absent : " + str(model_file))
+    face_model = cv2.FaceDetectorYN.create(
+        str(model_file), "", (WIDTH, HEIGHT),
+        score_threshold=0.85, nms_threshold=0.3, top_k=5000
     )
-    if face_model.empty():
-        raise RuntimeError("Impossible de charger le modèle visage.")
 
     body_model = cv2.HOGDescriptor()
     body_model.setSVMDetector(
@@ -134,6 +140,9 @@ def main():
 
     presence_active = False
     last_detection = float("-inf")
+    multiple_faces_active = False
+    last_multiple_faces = float("-inf")
+    multiple_candidate_since = None
 
     print("Caméra active. Appuie sur Q dans sa fenêtre pour quitter.")
 
@@ -151,26 +160,43 @@ def main():
             processing_ms = (time.perf_counter() - start) * 1000
 
             now = time.monotonic()
+            face_count = sum(label == "Visage / YuNet" for *_, label in detections)
             if detections:
                 last_detection = now
 
             presence = now - last_detection < 1.5
 
             if presence and not presence_active and detections:
-                log_alert(detections[0][4])
+                log_alert(detections[0][4], face_count=face_count)
+
+            # Nouvelle alerte même si la première personne était déjà présente.
+            # La temporisation évite de répéter l'alerte à chaque image.
+            if face_count >= 2:
+                if multiple_candidate_since is None:
+                    multiple_candidate_since = now
+                if now - multiple_candidate_since >= 0.5:
+                    last_multiple_faces = now
+                    if not multiple_faces_active:
+                        log_alert("Visage / YuNet", "multiple_faces", face_count)
+            else:
+                multiple_candidate_since = None
+            multiple_faces_active = now - last_multiple_faces < 1.5
 
             presence_active = presence
 
-            for x, y, w, h, label in detections:
+            for index, (x, y, w, h, label) in enumerate(detections, start=1):
                 cv2.rectangle(
                     frame, (x, y), (x + w, y + h), (0, 220, 0), 2
                 )
                 cv2.putText(
-                    frame, label, (x, max(20, y - 8)),
+                    frame, f"Visage {index}" if label == "Visage / YuNet" else label,
+                    (x, max(20, y - 8)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 220, 0), 1
                 )
 
-            status = "PRESENCE DETECTEE" if presence else "Aucune presence"
+            status = (f"ALERTE : {face_count} VISAGES DETECTES" if face_count >= 2
+                      else "1 VISAGE DETECTE" if face_count == 1
+                      else "PRESENCE DETECTEE" if presence else "Aucune presence")
             color = (0, 0, 255) if presence else (0, 220, 0)
 
             cv2.putText(
@@ -181,6 +207,10 @@ def main():
                 frame, f"Traitement IA : {processing_ms:.1f} ms",
                 (15, 60), cv2.FONT_HERSHEY_SIMPLEX,
                 0.55, (255, 255, 255), 1
+            )
+            cv2.putText(
+                frame, f"Visages visibles : {face_count}", (15, 86),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 1
             )
 
             send_frame(frame)
