@@ -5,6 +5,7 @@ from pathlib import Path
 import urllib.request
 
 import cv2
+from api_access import service_headers
 
 
 # Remplacer 0 par 1 si la mauvaise caméra est sélectionnée.
@@ -35,7 +36,7 @@ def log_alert(method, event_type="human_presence", face_count=None):
         request = urllib.request.Request(
             "http://127.0.0.1:8000/api/v1/alerts",
             data=json.dumps(event).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **service_headers("vision")},
             method="POST",
         )
 
@@ -105,7 +106,7 @@ def send_frame(frame):
         request = urllib.request.Request(
             "http://127.0.0.1:8000/api/v1/frame",
             data=image.tobytes(),
-            headers={"Content-Type": "image/jpeg"},
+            headers={"Content-Type": "image/jpeg", **service_headers("vision")},
             method="POST",
         )
         with urllib.request.urlopen(request, timeout=0.5):
@@ -115,6 +116,7 @@ def send_frame(frame):
 
 
 def main():
+    service_headers("vision")
     cv2.setNumThreads(2)
 
     model_file = Path(__file__).resolve().parent / "models" / "face_detection_yunet_2023mar.onnx"

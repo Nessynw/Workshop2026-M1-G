@@ -66,6 +66,20 @@ main{margin-left:224px;padding:34px 42px 24px;max-width:1840px}.topbar{display:f
   <footer class="footer"><span>Sentinel-X · AetherCorp</span><span>Les états affichés proviennent des dernières données reçues.</span></footer>
 </main>
 <script>
+    // La session est portée par un cookie HttpOnly ; aucune clé API dans ce fichier.
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      if (response.status === 401) location.replace('/auth/login');
+      return response;
+    };
+    const logoutButton = document.createElement('button');
+    logoutButton.textContent = 'Déconnexion';
+    logoutButton.addEventListener('click', async () => {
+      const response = await fetch('/auth/logout', {method: 'POST'});
+      if (response.ok) location.replace('/auth/login');
+    });
+    document.querySelector('.topbar').appendChild(logoutButton);
     const commandLabels = {
       led_on: "Allumer la LED", led_off: "Éteindre la LED",
       buzzer_on: "Buzzer 2 s", buzzer_off: "Arrêter le buzzer"

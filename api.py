@@ -7,9 +7,12 @@ from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-app = FastAPI(title="Sentinel-X")
+from security import install_security
+
+app = FastAPI(title="Sentinel-X", docs_url=None, redoc_url=None, openapi_url=None)
 
 BASE_DIR = Path(__file__).resolve().parent
+install_security(app, BASE_DIR)
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DATABASE = DATA_DIR / "alerts.db"
@@ -72,7 +75,14 @@ def get_alerts():
 @app.post("/api/v1/frame", status_code=204)
 async def receive_frame(request: Request):
     global latest_frame
-    latest_frame = await request.body()
+    frame = bytearray()
+    async for chunk in request.stream():
+        frame.extend(chunk)
+        if len(frame) > 2 * 1024 * 1024:
+            raise HTTPException(413, "Image trop volumineuse.")
+    if request.headers.get("content-type") != "image/jpeg" or not frame.startswith(b"\xff\xd8"):
+        raise HTTPException(415, "Une image JPEG est attendue.")
+    latest_frame = bytes(frame)
     return Response(status_code=204)
 
 

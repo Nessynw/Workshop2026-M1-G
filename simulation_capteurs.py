@@ -2,6 +2,9 @@ import json
 import random
 import time
 import urllib.request
+from api_access import service_headers
+
+API_HEADERS = service_headers("bridge")
 
 print("Simulation de capteurs — Ctrl + C pour arrêter.")
 
@@ -18,7 +21,7 @@ try:
         request = urllib.request.Request(
             "http://127.0.0.1:8000/api/v1/readings",
             data=json.dumps(reading).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **API_HEADERS},
             method="POST",
         )
 

@@ -7,6 +7,9 @@ import unittest
 import json
 import threading
 import time
+import os
+from unittest.mock import patch
+from security import password_hash
 from types import SimpleNamespace
 from contextlib import closing
 from pathlib import Path
@@ -15,6 +18,16 @@ from fastapi.testclient import TestClient
 
 class CommandTests(unittest.TestCase):
     def setUp(self):
+        self.environment = patch.dict(os.environ, {
+            "SENTINEL_PASSWORD_HASH": password_hash("test-password-123"),
+            "SENTINEL_SESSION_SECRET": "test-session-secret-" * 3,
+            "SENTINEL_BRIDGE_KEY": "test-bridge-key-" * 3,
+            "SENTINEL_VISION_KEY": "test-vision-key-" * 3,
+            "SENTINEL_COOKIE_SECURE": "false",
+        })
+        self.environment.start()
+        self.bridge_headers = {"Authorization": "Bearer " + os.environ["SENTINEL_BRIDGE_KEY"]}
+        self.vision_headers = {"Authorization": "Bearer " + os.environ["SENTINEL_VISION_KEY"]}
         self.tmp = tempfile.TemporaryDirectory()
         source = Path(__file__).resolve().parents[1] / "api.py"
         target = Path(self.tmp.name) / "api.py"
@@ -22,14 +35,17 @@ class CommandTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("isolated_api", target)
         self.api = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.api)
-        self.client = TestClient(self.api.app)
+        self.client = TestClient(self.api.app, headers={"Origin": "http://testserver"})
+        response = self.client.post("/auth/login", json={"password": "test-password-123"})
+        self.assertEqual(response.status_code, 200)
 
     def tearDown(self):
         self.client.close()
         self.tmp.cleanup()
+        self.environment.stop()
 
     def online(self):
-        response = self.client.post("/api/v1/device/state", json={
+        response = self.client.post("/api/v1/device/state", headers=self.bridge_headers, json={
             "led": False, "buzzer": False, "data_mode": "sensors", "oled": True
         })
         self.assertEqual(response.status_code, 200)
@@ -45,18 +61,18 @@ class CommandTests(unittest.TestCase):
 
     def test_queue_then_confirmation(self):
         identifier = self.command()
-        self.assertEqual(self.client.get("/api/v1/commands/pending").json()[0]["id"], identifier)
+        self.assertEqual(self.client.get("/api/v1/commands/pending", headers=self.bridge_headers).json()[0]["id"], identifier)
         endpoint = f"/api/v1/commands/{identifier}/result"
-        self.client.post(endpoint, json={"status": "sent"})
-        self.assertEqual(self.client.get("/api/v1/commands/pending").json(), [])
-        self.client.post(endpoint, json={"status": "executed"})
+        self.client.post(endpoint, headers=self.bridge_headers, json={"status": "sent"})
+        self.assertEqual(self.client.get("/api/v1/commands/pending", headers=self.bridge_headers).json(), [])
+        self.client.post(endpoint, headers=self.bridge_headers, json={"status": "executed"})
         self.assertEqual(self.client.get("/api/v1/commands").json()[0]["status"], "executed")
 
     def test_confirmation_cannot_be_downgraded(self):
         identifier = self.command()
         endpoint = f"/api/v1/commands/{identifier}/result"
-        self.client.post(endpoint, json={"status": "executed"})
-        self.client.post(endpoint, json={"status": "sent"})
+        self.client.post(endpoint, headers=self.bridge_headers, json={"status": "executed"})
+        self.client.post(endpoint, headers=self.bridge_headers, json={"status": "sent"})
         self.assertEqual(self.client.get("/api/v1/commands").json()[0]["status"], "executed")
 
     def test_expired_command_not_published(self):
@@ -64,7 +80,7 @@ class CommandTests(unittest.TestCase):
         with closing(sqlite3.connect(self.api.DATABASE)) as db:
             db.execute("UPDATE commands SET expires_at=0 WHERE id=?", (identifier,))
             db.commit()
-        self.assertEqual(self.client.get("/api/v1/commands/pending").json(), [])
+        self.assertEqual(self.client.get("/api/v1/commands/pending", headers=self.bridge_headers).json(), [])
         self.assertEqual(self.client.get("/api/v1/commands").json()[0]["status"], "expired")
 
     def test_stale_heartbeat_disables_commands(self):
@@ -78,7 +94,7 @@ class CommandTests(unittest.TestCase):
     def test_unknown_action_and_missing_command(self):
         self.online()
         self.assertEqual(self.client.post("/api/v1/commands", json={"action": "invalid"}).status_code, 422)
-        self.assertEqual(self.client.post("/api/v1/commands/missing/result", json={"status": "sent"}).status_code, 404)
+        self.assertEqual(self.client.post("/api/v1/commands/missing/result", headers=self.bridge_headers, json={"status": "sent"}).status_code, 404)
 
     def test_pending_queue_bounded(self):
         self.online()
@@ -91,7 +107,7 @@ class CommandTests(unittest.TestCase):
                    "gas_raw": 1200, "pir": False, "sample": 4,
                    "data_mode": "generated", "anomaly": True, "anomaly_score": -0.1}
         for _ in range(2):
-            self.assertEqual(self.client.post("/api/v1/readings", json=reading).status_code, 201)
+            self.assertEqual(self.client.post("/api/v1/readings", headers=self.bridge_headers, json=reading).status_code, 201)
         self.assertEqual(self.client.get("/api/v1/readings").json()[-1]["sample"], 4)
         self.assertEqual(len(self.client.get("/api/v1/alerts").json()), 1)
 
@@ -102,7 +118,7 @@ class CommandTests(unittest.TestCase):
         bridge = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(bridge)
         def request(endpoint, payload=None):
-            response = self.client.get(endpoint) if payload is None else self.client.post(endpoint, json=payload)
+            response = self.client.get(endpoint, headers=self.bridge_headers) if payload is None else self.client.post(endpoint, headers=self.bridge_headers, json=payload)
             response.raise_for_status()
             return response.status_code, response.json()
         bridge.api_request = request

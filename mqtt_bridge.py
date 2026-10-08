@@ -12,6 +12,9 @@ import urllib.request
 from pathlib import Path
 import joblib
 import paho.mqtt.client as mqtt
+from api_access import load_environment, service_headers
+
+load_environment()
 
 BASE_DIR = Path(__file__).resolve().parent
 CA_FILE = BASE_DIR / "mosquitto" / "certs" / "ca.crt"
@@ -35,7 +38,7 @@ def api_request(path, payload=None):
     request = urllib.request.Request(
         API_URL + path,
         data=None if payload is None else json.dumps(payload, allow_nan=False).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", **service_headers("bridge")},
         method="GET" if payload is None else "POST",
     )
     with urllib.request.urlopen(request, timeout=3) as response:
@@ -159,6 +162,7 @@ def command_worker(client):
 
 
 def main():
+    service_headers("bridge")
     global MODEL, FEATURES
     if not CA_FILE.is_file():
         raise SystemExit("Certificat CA absent : " + str(CA_FILE))
