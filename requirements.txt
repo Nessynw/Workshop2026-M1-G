@@ -2,6 +2,7 @@ opencv-python==4.12.0.88
 numpy>=2.0,<2.3
 fastapi
 uvicorn
-scikit-learn
+scikit-learn==1.9.1
+pandas>=2.0,<4.0
 joblib
 paho-mqtt>=2.0,<3.0

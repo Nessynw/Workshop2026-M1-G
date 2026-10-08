@@ -1,0 +1,98 @@
+{
+  "model_sha256": "d61cc756ff8be2e80af624a3ce12d4c631a6d4f555a6486683cb29c473a90448",
+  "total_rows": 1425,
+  "sequences": 18,
+  "analyzed_rows": 1335,
+  "test_rows": 305,
+  "accuracy": 0.9967213114754099,
+  "labels": [
+    "FUITE_GAZ",
+    "INCIDENT_COMBINE",
+    "NORMAL",
+    "PRE_ALERTE",
+    "SURCHAUFFE"
+  ],
+  "confusion_matrix": [
+    [
+      76,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      34,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      21,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      67,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      106
+    ]
+  ],
+  "classification_report": {
+    "FUITE_GAZ": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 76.0
+    },
+    "INCIDENT_COMBINE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 34.0
+    },
+    "NORMAL": {
+      "precision": 0.9545454545454546,
+      "recall": 1.0,
+      "f1-score": 0.9767441860465116,
+      "support": 21.0
+    },
+    "PRE_ALERTE": {
+      "precision": 1.0,
+      "recall": 0.9852941176470589,
+      "f1-score": 0.9925925925925926,
+      "support": 68.0
+    },
+    "SURCHAUFFE": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 106.0
+    },
+    "accuracy": 0.9967213114754099,
+    "macro avg": {
+      "precision": 0.990909090909091,
+      "recall": 0.9970588235294118,
+      "f1-score": 0.9938673557278207,
+      "support": 305.0
+    },
+    "weighted avg": {
+      "precision": 0.9968703427719822,
+      "recall": 0.9967213114754099,
+      "f1-score": 0.9967472924697477,
+      "support": 305.0
+    }
+  },
+  "limits": "Rejeu du test déjà consulté, étiquettes définies par règles. Ne mesure pas la précision sur incidents réels."
+}

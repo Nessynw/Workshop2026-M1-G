@@ -28,7 +28,7 @@ PubSubClient mqttClient(espClient);
 
 // false : lecture des capteurs du circuit Wokwi en continu.
 // true : ancien generateur de 500 mesures conserve pour l'analyse.
-const bool USE_GENERATED_DATA = false;
+const bool USE_GENERATED_DATA = true;
 #include "device_io.h"
 
 // ======================================================

@@ -10,7 +10,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-import joblib
+from sensor_classifier import SensorClassifier
 import paho.mqtt.client as mqtt
 from api_access import load_environment, service_headers
 
@@ -25,7 +25,7 @@ MQTT_TOPIC = "sentinel/sensors"
 COMMAND_TOPIC = "sentinel/commands"
 STATE_TOPIC = "sentinel/device/state"
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000").rstrip("/")
-MODEL_FILE = BASE_DIR / "models" / "anomaly_model.joblib"
+MODEL_FILE = BASE_DIR / "random_forest_sentinel.joblib"
 MODEL = None
 FEATURES = []
 measurements = queue.Queue(maxsize=500)
@@ -87,6 +87,8 @@ def measurement_worker():
                 raise ValueError("presence doit être un booléen.")
             mode = data.get("data_mode", "generated")
             source = data.get("source", "esp32_wokwi")
+            if source not in ("esp32_wokwi", "esp8266", "simulation") or mode not in ("generated", "sensors"):
+                raise ValueError("Source ou mode inconnu.")
             reading = {"source": source, "pir": data["presence"], "data_mode": mode}
             for name in ("temperature", "humidity", "gas_raw"):
                 value = float(data[name])
@@ -96,12 +98,14 @@ def measurement_worker():
             for name in ("sample", "delta_temp", "delta_humidity", "delta_gas", "presence_change"):
                 if name in data:
                     reading[name] = data[name]
-            # Ancien modèle conservé. Aucun nouvel entraînement ici.
-            # Il a été entraîné sur le générateur, pas sur des capteurs réels.
-            if MODEL is not None and mode == "generated":
-                sample = [[reading[name] for name in FEATURES]]
-                score = float(MODEL.decision_function(sample)[0])
-                reading.update(anomaly=score < 0, anomaly_score=score)
+            if MODEL is not None:
+                try:
+                    reading.update(MODEL.analyze(reading, time.monotonic()))
+                except Exception as error:
+                    print("Analyse indisponible pour cette mesure :", error)
+                    reading.update(ai_model="RandomForest", ai_status="unavailable")
+            else:
+                reading.update(ai_model="RandomForest", ai_status="unavailable")
             status, _ = api_request("/api/v1/readings", reading)
             print(f"Mesure transmise à l'API : {status}", reading)
         except (ValueError, KeyError, TypeError, OSError) as error:
@@ -163,15 +167,18 @@ def command_worker(client):
 
 def main():
     service_headers("bridge")
-    global MODEL, FEATURES
+    global MODEL
     if not CA_FILE.is_file():
         raise SystemExit("Certificat CA absent : " + str(CA_FILE))
     if MODEL_FILE.is_file():
         try:
-            bundle = joblib.load(MODEL_FILE)
-            MODEL, FEATURES = bundle["model"], bundle["features"]
+            MODEL = SensorClassifier(MODEL_FILE)
+            print("Random Forest chargé — analyse après six mesures consécutives.")
+            print("Modèle entraîné sur des données Wokwi : validation matérielle encore nécessaire.")
         except Exception as error:
-            print("Ancien modèle indisponible ; transmission sans analyse :", error)
+            print("Random Forest indisponible ; transmission sans analyse :", error)
+    else:
+        print("Modèle Random Forest absent :", MODEL_FILE)
     password = getpass.getpass("Mot de passe MQTT du compte bridge : ")
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="sentinel-api-bridge")
     client.username_pw_set(MQTT_USER, password)

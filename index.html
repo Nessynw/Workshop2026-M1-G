@@ -60,12 +60,24 @@ main{margin-left:224px;padding:34px 42px 24px;max-width:1840px}.topbar{display:f
     </div>
     <div>
       <section class="panel" id="controls"><div class="panel-head"><h2>Commandes du boîtier</h2><span class="label">ACTIONNEURS</span></div><p id="actuator-status">En attente du firmware et du bridge…</p><div id="actuator-buttons"><div class="control-label"><strong>LED rouge</strong><span>Indicateur commandable</span></div><div class="button-row"><button type="button" class="primary-button" data-action="led_on" disabled>Allumer la LED</button><button type="button" data-action="led_off" disabled>Éteindre la LED</button></div><div class="control-label"><strong>Buzzer</strong><span>Signal sonore</span></div><div class="button-row"><button type="button" class="primary-button" data-action="buzzer_on" disabled>Bip · 2 secondes</button><button type="button" data-action="buzzer_off" disabled>Arrêter le buzzer</button></div></div><p id="command-feedback" role="status" aria-live="polite"></p><ul id="command-history"></ul></section>
-      <section class="panel ai-panel"><div class="panel-head"><h2>Analyse des capteurs</h2><span class="label">MODÈLE IA</span></div><p id="ai-status">En attente d’une mesure analysée…</p><p id="ai-score"></p></section>
+      <section class="panel ai-panel"><div class="panel-head"><h2>Résultat de l’analyse IA</h2><span class="label">MODÈLE IA</span></div><p id="ai-status">En attente d’une mesure analysée…</p><p id="ai-score"></p></section>
     </div>
   </div>
   <footer class="footer"><span>Sentinel-X · AetherCorp</span><span>Les états affichés proviennent des dernières données reçues.</span></footer>
 </main>
 <script>
+    const aiClassLabels = {
+      NORMAL:
+        "Les dernières mesures ressemblent à un fonctionnement habituel.",
+      PRE_ALERTE:
+        "Les dernières mesures montrent un profil de pré-alerte. Vérifiez les courbes des capteurs.",
+      SURCHAUFFE:
+        "Les dernières mesures ressemblent à un profil de surchauffe. Vérifiez la température et son évolution.",
+      FUITE_GAZ:
+        "Les dernières mesures ressemblent à un profil de risque gaz. Vérifiez la valeur du gaz et son évolution.",
+      INCIDENT_COMBINE:
+        "Les dernières mesures ressemblent à un profil de risques combinés. Vérifiez les courbes de température et de gaz."
+    };
     // La session est portée par un cookie HttpOnly ; aucune clé API dans ce fichier.
     const originalFetch = window.fetch.bind(window);
     window.fetch = async (...args) => {
@@ -173,7 +185,7 @@ main{margin-left:224px;padding:34px 42px 24px;max-width:1840px}.topbar{display:f
             multiple_faces: typeof alert.face_count === "number"
               ? `${alert.face_count} visages détectés simultanément`
               : "Plusieurs visages détectés simultanément",
-            sensor_anomaly: "Mesure atypique détectée par l’IA"
+            sensor_anomaly: aiClassLabels[alert.ai_class] || "Mesure atypique détectée par l’IA"
           }[alert.type] || alert.type;
   
 
@@ -236,7 +248,23 @@ async function refreshSensors() {
     const aiRecent = Date.now() - aiDate.getTime() < 10000;
 
     aiPanel.dataset.state = !aiRecent || typeof latest.anomaly !== "boolean" ? "unknown" : (latest.anomaly ? "danger" : "safe");
-    if (typeof latest.anomaly === "boolean") {
+    if (latest.ai_status === 'ready' && latest.ai_class) {
+      const result = aiClassLabels[latest.ai_class] || latest.ai_class;
+      aiStatus.textContent = aiRecent ? result : 'Dernière analyse — ' + result + ' — mesure ancienne';
+      aiStatus.style.color = aiRecent ? (latest.anomaly ? '#f09087' : '#64d69a') : '#e7c783';
+      const confidence = typeof latest.ai_confidence === 'number'
+        ? (latest.ai_confidence * 100).toFixed(1) + ' %' : 'indisponible';
+      aiScore.textContent = 'Random Forest · confiance du modèle dans ce classement : ' + confidence
+        + ' · analyse des 6 dernières mesures et de leur évolution. Modèle entraîné sur des données simulées Wokwi. Le gaz est une valeur brute, pas une concentration en ppm. Ce classement ne confirme pas un incident réel.';
+    } else if (latest.ai_status === 'warming_up') {
+      aiStatus.textContent = 'Collecte de l’historique : ' + (latest.ai_window_samples || 0) + '/6 mesures';
+      aiStatus.style.color = '#e7c783';
+      aiScore.textContent = 'Le modèle attend six mesures consécutives avant de classer leur évolution.';
+    } else if (latest.ai_status === 'unavailable') {
+      aiStatus.textContent = 'Modèle Random Forest indisponible';
+      aiStatus.style.color = '#e7c783';
+      aiScore.textContent = 'Consulter le terminal du bridge pour identifier le problème.';
+    } else if (typeof latest.anomaly === "boolean") {
       const result = latest.anomaly
         ? "Mesure atypique détectée"
         : "Mesure habituelle selon le modèle";

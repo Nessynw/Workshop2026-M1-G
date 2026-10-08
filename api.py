@@ -117,6 +117,11 @@ class SensorReading(BaseModel):
     delta_gas: float | None = None
     presence_change: int | None = None
     data_mode: str | None = None
+    ai_model: Literal["RandomForest"] | None = None
+    ai_status: Literal["warming_up", "ready", "unavailable"] | None = None
+    ai_class: Literal["NORMAL", "PRE_ALERTE", "SURCHAUFFE", "FUITE_GAZ", "INCIDENT_COMBINE"] | None = None
+    ai_confidence: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    ai_window_samples: int | None = Field(default=None, ge=0, le=6)
     anomaly: bool | None = None
     anomaly_score: float | None = Field(
         default=None,
@@ -153,10 +158,12 @@ def receive_reading(reading: SensorReading):
         ).fetchone()
 
         previous_anomaly = False
+        previous_class = None
 
         if previous_row:
             previous = json.loads(previous_row[0])
             previous_anomaly = previous.get("anomaly") is True
+            previous_class = previous.get("ai_class")
 
         db.execute(
             "INSERT INTO readings (payload) VALUES (?)",
@@ -164,12 +171,14 @@ def receive_reading(reading: SensorReading):
         )
 
         # Une alerte au début d'un épisode atypique.
-        if reading.anomaly is True and not previous_anomaly:
+        if reading.anomaly is True and (not previous_anomaly or reading.ai_class != previous_class):
             alert = {
                 "timestamp": reading.timestamp.isoformat(),
                 "source": reading.source,
                 "type": "sensor_anomaly",
-                "model": "IsolationForest",
+                "model": reading.ai_model or "IsolationForest",
+                "ai_class": reading.ai_class,
+                "ai_confidence": reading.ai_confidence,
                 "temperature": reading.temperature,
                 "humidity": reading.humidity,
                 "gas_raw": reading.gas_raw,
